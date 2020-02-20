@@ -4,8 +4,7 @@
 使用Spark预测Sparkify应用程序的客户流失率。
 
 ## 目录
-![contents](https://github.com/Zhu-Haikun/Udacity-Data-Analyst-Advanced-collection/Project-8-Sparkify/image/contents.png)
-
+![image](https://github.com/Zhu-Haikun/Udacity-Data-Analyst-Advanced-collection/Project-8-Sparkify/image/contents.png)
 
 ## 运行环境
 确保操作系统已安装以下软件
