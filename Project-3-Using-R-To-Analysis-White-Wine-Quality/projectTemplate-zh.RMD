@@ -1,0 +1,502 @@
+# Martin.Zhu的白葡萄酒质量探索
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# 加载你最终使用的所有组件
+# 在这个代码块的分析中。
+
+# 注意，在这个代码块中，将参数 "echo" 设为假。
+# This prevents the code from displaying in the knitted HTML output.这可以避免代码混入 HTML 输出显示。
+# 应当在文件中，对所有代码块设为 echo=FALSE 。
+library(ggplot2)
+library(GGally)
+library(RColorBrewer)
+library(psych)
+library(dplyr)
+library(gridExtra)
+library(grid)
+```
+
+# 单变量绘图选择
+```{r echo=FALSE, Load_the_Data}
+# 加载数据
+white_wine <- read.csv('wineQualityWhites.txt')
+```
+该报告探索了包含4898条白葡萄酒质量相关参数的数据集。
+
+# 单变量分析
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 查看数据集描述
+str(white_wine)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 查看数据集特征
+describe(white_wine)
+```
+> 数据集由13个变量组成，具有4898条观测值，每个变量的解释如下：
+
+1、X：序号
+
+2、fixed acidity：固定酸度
+
+3、volatile acidity：挥发性酸度
+
+4、citric acid：柠檬酸
+
+5、residual sugar：残糖
+
+6、chlorides：氯化物
+
+7、free sulfur dioxide：游离二氧化硫
+
+8、total sulfur dioxide：总二氧化硫
+
+9、density：密度
+
+10、pH：pH 值
+
+11、sulphates：硫酸盐
+
+12、alcohol：酒精度
+
+13、quality：质量 - 0 到 10 之间的得分
+
+#### 变量X为序号，对数据分析没有价值，删除此列，之后对数据集再进行观测。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 删除列‘X’
+white_wine_obs <- subset(white_wine,select = -c(X))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 删除重复的值
+white_wine_obs <- white_wine_obs %>% distinct()
+```
+删除‘X’变量后，再次评估数据集，发现有3961条有效数据，937条重复数据，占了原数据的19.13%。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 设置主题变量，使图表可显示中文
+theme_zh <- theme(text = element_text(family = 'Hei'))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 固定酸度变量特征
+qplot(x = fixed.acidity, data = white_wine_obs, fill = I('#099DD9')) +
+  ggtitle('固定酸度分布') + ylab('counts') + theme_zh + xlab('固定酸度')
+
+summary(white_wine_obs$fixed.acidity)
+```
+
+固定酸度最小值为3.8，最大值为14.2，中位数为6.8，平均值为6.839，平均值与中位数接近。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 挥发性酸度变量特征
+qplot(x = volatile.acidity, data = white_wine_obs, fill = I('#F79420')) +
+  ggtitle('挥发性酸度分布') + ylab('counts') + theme_zh + xlab('挥发性酸度')
+
+summary(white_wine_obs$volatile.acidity)
+```
+
+挥发性酸度为右偏态，最小值为0.08，最大值为1.1，中位数为0.26，平均值为0.2805。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 柠檬酸变量特征
+qplot(x = citric.acid, data = white_wine_obs, fill = I('#330066')) + 
+  ggtitle('柠檬酸分布')  + ylab('counts') + theme_zh + xlab('柠檬酸')
+
+summary(white_wine_obs$citric.acid)
+```
+
+白葡萄酒柠檬酸为右偏态，但在0-0.75范围内，呈现正态分布，其中最小值为0，最大值为1.66，中位数为0.32，平均值为0.3343。怀疑最大值为异常值，查看所有大于1的值。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 柠檬酸异常值特征
+subset(white_wine_obs, citric.acid > 1)
+```
+
+柠檬酸大于1的值有2行，移除异常值。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 柠檬酸异常值移除
+white_wine_obs = subset(white_wine_obs, citric.acid <= 1)
+# 检查数据集
+qplot(x = citric.acid, data = white_wine_obs, fill = I('#330066')) + 
+  ggtitle('柠檬酸分布')  + ylab('counts') + theme_zh + xlab('柠檬酸')
+```
+
+异常值移除后基本呈正态分布。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 残糖变量特征
+qplot(x = residual.sugar, data = white_wine_obs, fill = I('#33CC66')) + 
+  ggtitle('残糖分布')  + ylab('counts')+ theme_zh + xlab('残糖')
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 查看残糖摘要
+summary(white_wine_obs$residual.sugar)
+```
+
+残糖最大值与数据总体分布较远，怀疑为异常值，目测数据
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 观测残糖异常值
+subset(white_wine_obs, residual.sugar > 30)
+```
+
+大于30的值有2个，移除异常值。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 移除残糖异常值
+white_wine_obs = subset(white_wine_obs, residual.sugar <= 30)
+# 观测残糖异常值
+qplot(x = residual.sugar, data = white_wine_obs, fill = I('#33CC66')) + 
+  ggtitle('残糖分布')  + ylab('counts')+ theme_zh + xlab('残糖')
+
+summary(white_wine_obs$residual.sugar)
+```
+
+移除异常值后的残糖数据为长尾数据，需要将其转换。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 对残糖数据进行转换
+qplot(x = residual.sugar, data = white_wine_obs, binwidth = 0.01,
+      fill = I('#33CC66')) + ggtitle('残糖对数转换后分布')  + 
+  ylab('counts') + scale_x_log10()+ theme_zh + xlab('残糖')
+```
+
+白葡萄酒残糖数据最小值为0.6，最大值为26.05，中位数为4.7，平均值为5.894。将其转换后，呈双峰态，第一个峰值在1.7，第二个峰值在9左右。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 氯化物变量特性
+qplot(x = chlorides, data = white_wine_obs, fill = I('#999900')) + 
+  ggtitle('氯化物分布')  + ylab('counts') + theme_zh + xlab('氯化物')
+```
+
+氯化物分布为长尾数据，使用对数函数将其转换。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 对长尾数据进行转换
+qplot(x = chlorides, data = white_wine_obs, binwidth = 0.01, fill = I('#999900')) +
+  ggtitle('氯化物对数转换后分布')  + ylab('counts') + 
+  scale_x_log10() + theme_zh + xlab('氯化物')
+
+summary(white_wine_obs$chlorides)
+```
+
+白葡萄酒氯化物数据最小值为0.009，最大值为0.346，中位数为0.042，平均值为0.0459。对氯化物数据进行转换后，呈正态分布。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 游离二氧化硫变量特性
+qplot(x = free.sulfur.dioxide, data = white_wine_obs, fill = I('#CC3300')) +
+  ggtitle('游离二氧化硫分布')  + ylab('counts') + 
+  theme_zh + xlab('游离二氧化硫')
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 观测游离二氧化硫异常值
+subset(white_wine_obs, free.sulfur.dioxide > 150)
+```
+
+异常值有1个，为最大值，移除异常数据。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 移除游离二氧化硫异常值
+white_wine_obs <- subset(white_wine_obs, free.sulfur.dioxide <= 150)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 观测移除异常值的数据
+qplot(x = free.sulfur.dioxide, data = white_wine_obs, fill = I('#CC3300')) +
+  ggtitle('游离二氧化硫分布')  + ylab('counts') +
+  theme_zh + xlab('游离二氧化硫')
+```
+
+移除异常值的游离二氧化硫为右偏态，对其进行转换。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 对游离二氧化硫变量进行对数转换
+qplot(x = free.sulfur.dioxide, data = white_wine_obs, binwidth = 0.01,
+      fill = I('#CC3300')) + ggtitle('游离二氧化硫对数转换分布')  +
+  ylab('counts') + scale_x_log10() + theme_zh + xlab('游离二氧化硫')
+
+summary(white_wine_obs$free.sulfur.dioxide)
+```
+
+游离二氧化硫最小值为2，最大值为146.5，中位数为33，平均值为34.83。进行对数转换后，峰值在30左右。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 总二氧化硫变量特性
+qplot(x = total.sulfur.dioxide, data = white_wine_obs, fill = I('#CC33FF')) +
+  ggtitle('总二氧化硫分布')  + ylab('counts') + theme_zh + xlab('总二氧化硫')
+
+summary(white_wine_obs$total.sulfur.dioxide)
+```
+
+总二氧化硫最小值为9，最大值为366.5，中位数为133，平均值为137.1。在0-300的范围内呈正态分布。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 密度变量特性
+qplot(x = density, data = white_wine_obs, fill = I('#FF0033')) +
+  ggtitle('密度分布')  + ylab('counts') + theme_zh + xlab('密度')
+
+summary(white_wine_obs$density)
+```
+
+密度数据平均值为0.9938，中位数为0.9935，最大值1.003，最小值0.9871，整体呈正态分布。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# pH值变量特性
+qplot(x = pH, data = white_wine_obs, fill = I('#003300')) +
+  ggtitle('pH分布')  + ylab('counts') + theme_zh + xlab('pH')
+
+summary(white_wine_obs$pH)
+```
+
+pH值呈正态分布，峰值在3.1-3.2左右。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 硫酸盐变量特性
+qplot(x = sulphates, data = white_wine_obs, binwidth = 0.01,
+      fill = I('#333333')) + ggtitle('硫酸盐分布')  + ylab('counts') +
+  theme_zh + xlab('硫酸盐')
+```
+
+硫酸盐呈右偏态，将其转换。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 对硫酸盐进行对数变换
+qplot(x = sulphates, data = white_wine_obs, binwidth = 0.01,
+      fill = I('#333333')) + ggtitle('硫酸盐对数转换')  + ylab('counts') +
+  scale_x_log10() + theme_zh + xlab('硫酸盐')
+
+summary(white_wine_obs$sulphates)
+```
+
+转换后的硫酸盐基本呈正态分布，但在峰值部分离散较大。最小值0.22，最大值1.08，中位数0.48，平均值0.4903.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 酒精度变量特性
+qplot(x = alcohol, data = white_wine_obs, fill = I('Yellow')) +
+  ggtitle('酒精度分布')  + ylab('counts') + theme_zh + xlab('酒精度')
+
+summary(white_wine_obs$alcohol)
+```
+
+酒精度数据没有呈现出特别明显的正态分布，最小值为8，最大值为14.2，中位数为10.4，平均值为10.59。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 质量等级特性
+qplot(x = quality, data = white_wine_obs, fill = I('blue')) +
+  ggtitle('质量等级分布')  + ylab('counts') + theme_zh + xlab('质量等级')
+
+summary(white_wine_obs$quality)
+```
+
+白葡萄酒质量等级基本呈正态分布，质量小于6的葡萄酒数量逐渐减少，品质大于6的葡萄酒数量逐渐减少的同时，其稀有程度大于质量小于6的白葡萄酒。最小值3，最大值9，中位数6，平均值5.855.
+
+### 你的数据集结构是什么？
+数据集中有3956条数据，具有12个变量（固定酸度、挥发性酸度、柠檬酸、残糖、氯化物、游离二氧化硫、总二氧化硫、密度、pH、硫酸盐、酒精度、质量等级）。其中有序变量为白葡萄酒质量，质量由差到好的顺序为0、1、2、3、4、5、6、7、8、9、10。
+
+其他发现：
+
+1. 大部分白葡萄酒质量等级都为6。
+
+1. 残糖是明显的长尾数据，对数转换后，呈双峰态。
+
+1. 大多数白葡萄酒酒精度在8-14之间。
+
+
+### 你的数据集内感兴趣的主要特性有哪些？
+1. 酒精含量更高的白葡萄酒是否获得的评价更高。
+
+1. 残糖含量更高的白葡萄酒是否获得的评价更高。
+
+### 你认为数据集内哪些其他特征可以帮助你探索兴趣特点？
+pH可能对白葡萄酒评级产生影响。
+
+### 根据数据集内已有变量，你是否创建了任何新变量？
+没有创建新的变量。
+
+### 在已经探究的特性中，是否存在任何异常分布？你是否对数据进行一些操作，如清洁、调整或改变数据的形式？如果是，你为什么会这样做？
+检查数据集异常值时，发现数据有937条重复数据，占总数据的19.13%，对之后的EDA影响较大，需要移除。柠檬酸、残糖、氯化物、游离二氧化硫均有异常大的值，移除异常值后，柠檬酸呈正态分布，氯化物、游离二氧化硫、硫酸盐对数转换后，呈正态分布，残糖对数转换后呈双峰态。
+
+# 双变量绘图选择
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 转换白葡萄酒质量，将其从int转换为factor
+white_wine_eda <- white_wine_obs
+white_wine_eda$quality <- as.factor(white_wine_eda$quality)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 查看转换后的结果
+str(white_wine_eda) 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与酒精度的关系_频谱图
+ggplot(aes(x = alcohol), data = white_wine_eda) +
+  geom_freqpoly(stat = 'count', aes(color = quality)) +
+  ggtitle('Quality---Alcohol_频谱图') + theme_zh
+```
+
+白葡萄酒酒精度与质量的频谱图，并不能很好的反应酒精度对白葡萄酒质量的影响。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与酒精度的关系_堆叠图
+ggplot(aes(x = alcohol), data = white_wine_eda) +
+  geom_histogram(stat = 'count', aes(color = quality)) +
+  ggtitle('Quality---Alcohol_堆叠图') + theme_zh
+```
+
+从频谱图和堆叠图综合反应出，质量为5和6的白葡萄酒占了很大的部分，由于质量5和6的白葡萄酒占比太高，很难观测其他质量白葡萄酒的情况。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与酒精度的关系_箱线图
+ggplot(aes(x = quality, y = alcohol), data = white_wine_eda) +
+  geom_boxplot() + scale_y_continuous(limits = c(8, 15)) +
+  ggtitle('Quality---Alcohol_箱线图') + theme_zh
+```
+
+箱线图反应了白葡萄酒质量与酒精度的一些关系，质量为7-9的酒，酒精度中位数依次升高，中位数最低大约在11.5左右，最低大约在12.5左右，酒精度小于11的酒，整体质量较低。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与残糖的关系_箱线图
+ggplot(aes(x = quality, y = residual.sugar), data = white_wine_eda) +
+  geom_boxplot() + scale_y_continuous(limits = c(0.5, 26.1)) +
+  ggtitle('质量评级---残糖_箱线图') + theme_zh
+```
+
+残糖较高的白葡萄酒，质量在5-6居多，质量最好的酒，残糖中位数最低。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与pH的关系_箱线图
+ggplot(aes(x = quality, y = pH), data = white_wine_eda) + geom_boxplot() +
+  scale_y_continuous(limits = c(2.7, 3.85)) +
+  ggtitle('质量评级---pH_箱线图') + theme_zh
+```
+
+中位数与第三个四分位数随着质量的提高，pH呈先降后升的趋势。第一个四分位数随着质量的提高，pH一直呈上升趋势。
+
+# 双变量分析
+
+### 探讨你在这部分探究中观察到的一些关系。这些感兴趣的特性与数据集内其他特性有什么区别？
+
+1. 酒精度与质量有相关性，随着质量的提高，酒精度先降后升，质量最高的白葡萄酒，整体酒精度处于比较高的水平。
+
+1. 残糖与质量有相关性，但是相关性强度不明显，质量7-9的白葡萄酒，残糖较质量3-6相比，整体偏低，猜测残糖含量低的白葡萄酒获得高质量评价的概率大。
+
+### 你是否观察到主要特性与其他特性之间的有趣关系？
+
+pH与质量相互关联，质量越高，pH越高。
+
+### 你发现最强的关系是什么？
+
+pH与质量相呈正相关且相关性较强，酒精度与质量有相关性，但相关性程度不及pH与质量，残糖与质量相关性不明显。
+
+
+# 多变量绘图选择
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 酒精度、pH、质量之间的关系
+ggplot(aes(x = pH, y = alcohol), data = white_wine_eda) + 
+  geom_point(aes(color = quality), alpha = 1,
+             position = position_jitter(h = 0)) + 
+  scale_color_brewer(type = 'seq', palette = 2) +
+  ggtitle('酒精度、pH、质量_散点图') + theme_zh
+```
+
+pH与酒精度、质量没有明显关系。酒精度和质量有相关性，酒精度越高，颜色越深，说明白葡萄酒质量随着酒精度升高而提升。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 残糖、pH、质量之间的关系
+ggplot(aes(x = pH, y = residual.sugar), data = white_wine_eda) + 
+  geom_point(aes(color = quality), alpha = 1,
+             position = position_jitter(h = 0)) + 
+  scale_color_brewer(type = 'seq', palette = 5) +
+  ggtitle('pH、残糖、质量_散点图') + theme_zh
+```
+
+残糖、pH、质量之间相关性不明显。
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 残糖、酒精度、质量之间的关系
+ggplot(aes(x = alcohol, y = residual.sugar), data = white_wine_eda) + 
+  geom_point(aes(color = quality), alpha = 1,
+             position = position_jitter(h = 0)) + 
+  scale_color_brewer(type = 'seq', palette = 7) +
+  ggtitle('酒精度、残糖、质量_散点图') + theme_zh
+```
+
+随着酒精度的升高，白葡萄酒残糖逐渐降低，酒精度与残糖负相关性强。
+
+# 多变量分析
+
+###  探讨你在这部分探究中观察到的一些关系。通过观察感兴趣的特性，是否存在相互促进的特性？
+
+在多变量分析中，残糖、酒精度、pH、质量之间均未发现有相互促进的特性。
+
+### 这些特性之间是否存在有趣或惊人的联系呢？
+
+酒精度与残糖之间存在负相关性，酒精度越高，白葡萄酒残糖含量越小。
+
+### 选项：你是否创建过数据集的任何模型？讨论你模型的优缺点。
+
+未找到相关性特别强的变量，未创建任何数据集模型。
+
+------
+
+# 定稿图与总结
+
+### 绘图一
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 质量等级特性
+qplot(x = quality, data = white_wine_eda, fill = I('blue')) + theme_zh +
+  labs(x = '质量得分',
+       y = '数量 （单位:个）',
+       title = '白葡萄酒质量得分分布')
+```
+
+### 描述一
+
+白葡萄酒质量呈正态分布，这说明在一般情况下，质量特别差和特别好的酒均不容易出现。
+
+### 绘图二
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 白葡萄酒质量与pH的关系_箱线图
+ggplot(aes(x = quality, y = pH), data = white_wine_eda) + geom_boxplot() +
+  scale_y_continuous(limits = c(2.7, 3.85)) + theme_zh +
+  labs(x = '质量得分',
+       y = 'pH',
+       title = '白葡萄酒质量得分与pH之间的关系')
+```
+
+### 描述二
+
+pH与质量相互关联，pH越高，白葡萄酒质量越好。
+
+### 绘图三
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 残糖、酒精度、质量之间的关系
+ggplot(aes(x = alcohol, y = residual.sugar), data = white_wine_eda) + 
+  geom_point(aes(color = quality), alpha = 1, 
+             position = position_jitter(h = 0)) + theme_zh +
+  scale_color_brewer(type = 'seq', palette = 7) +
+  labs(x = '酒精度 (单位:%)',
+       y = '残糖 (单位:g/L)',
+       title = '白葡萄酒质量得分、残糖、pH之间的关系')
+```
+
+### 描述三
+
+酒精度与残糖之间呈负相关，酒精度越高，白葡萄酒残糖含量越小。
+
+------
+
+# 反思
+
+选择数据集后，只是简单查看了数据集是否有空值，在单变量分析的过程中才发现该数据集有重复值，回过头再重新对数据集进行了清理，浪费了一些时间。
+
+在处理数据的过程中，感到数据量较小，有的数据过于离散，不太容易观察到相关性。同时该数据集分类变量只有一个“质量”，缺乏对比数据，也许将未选择的红葡萄酒数据合并至该数据集，能找到更多有关联的变量。
+
